@@ -65,11 +65,11 @@ playoff_fg_std = np.std(playoff_field_goal_percent)
 #finding players who shot above the FGA
 point_diff_players = above_FGA_regular_players['Player'].tolist()
 
-pts_diff_regular = df_players_regular.loc[df_players_regular['Player'].isin(point_diff_players)]
-pts_diff_playoff = df_players_playoff.loc[df_players_playoff['Player'].isin(point_diff_players)]
+pts_diff_regular_df = df_players_regular.loc[df_players_regular['Player'].isin(point_diff_players)]
+pts_diff_playoff_df = df_players_playoff.loc[df_players_playoff['Player'].isin(point_diff_players)]
 
-pts_diff_regular = pts_diff_regular['PTS']
-pts_diff_playoff = pts_diff_playoff['PTS']
+pts_diff_regular = pts_diff_regular_df['PTS']
+pts_diff_playoff = pts_diff_playoff_df['PTS']
 
 pts_diff_regular_list = pts_diff_regular.tolist()
 pts_diff_playoff_list = pts_diff_playoff.tolist()
@@ -89,29 +89,62 @@ plt.scatter(x_plot_values,pts_diff_playoff)
 ax.set_xticks(x_plot_values)
 ax.set_xticklabels(point_diff_players, rotation = 90)
 
+regressed_count = 0
+progress_count = 0
+regressed_player_list = []
+progress_player_list = []
+
 #shows if players regressed or improved their PPG during the playoffs
 for x in x_plot_values:
     if regular_pts_dict[x] > playoff_pts_dict[x]:
+        regressed_count +=1
+        regressed_player_list.append(x)
         ax.vlines(x, ymin= playoff_pts_dict[x],
                  ymax=regular_pts_dict[x],
                  color='red', linestyle='dotted', linewidth=2)
     else:
+        progress_count +=1
+        progress_player_list.append(x)
         ax.vlines(x, ymin=regular_pts_dict[x],
                  ymax=playoff_pts_dict[x],
                  color='green', linestyle='dotted', linewidth=2)
 
 
 ax.legend(['Regular Season PTS', 'Playoff PTS'])
+plt.title("PPG Differential Between Regular and Playoff Season")
+plt.ylabel("PPG")
 plt.subplots_adjust(bottom=0.3)
-plt.show()
+# plt.show()
+plt.clf()
+
+#setting up to perform analysis
+# print(regressed_count, progress_count)
+# print(regressed_player_list, progress_player_list)
+# print(point_diff_players)
+
+regressed_names = []
+progress_names = []
+
+for num in regressed_player_list:
+    regressed_names.append(point_diff_players[num])
+
+for num in progress_player_list:
+    progress_names.append(point_diff_players[num])
+
+regressed_avg_numerator = 0
+progress_avg_numerator = 0
+regressed_name_ppg_differential_dict = {}
+progress_name_ppg_differential_dict = {}
+
+# print(progress_names)
+
+regular_playoff_ppg_diff_merged_df = pd.merge(pts_diff_regular_df, pts_diff_playoff_df, on = 'Player', suffixes=('_regular', '_playoffs'))
+regular_playoff_ppg_diff_merged_df['Point Difference'] = regular_playoff_ppg_diff_merged_df['PTS_playoffs'] - regular_playoff_ppg_diff_merged_df['PTS_regular']
+
+specific_columns = regular_playoff_ppg_diff_merged_df[['Player', 'PTS_regular', 'PTS_playoffs','Point Difference']]
+
+print(specific_columns)
 
 
-# for x in x_plot_values:
-#     if regular_pts_dict[x] > playoff_pts_dict[x]:
-#         ax.vlines(x, ymin=min(min(pts_diff_regular), min(pts_diff_playoff)),
-#                  ymax=max(max(pts_diff_regular), max(pts_diff_playoff)),
-#                  color='red', linestyle='dotted', linewidth=1)
-#     else:
-#         ax.vlines(x, ymin=min(min(pts_diff_regular), min(pts_diff_playoff)),
-#                  ymax=max(max(pts_diff_regular), max(pts_diff_playoff)),
-#                  color='green', linestyle='dotted', linewidth=1)
+# for player in regressed_names:
+# columns = pts_diff_regular.columns.tolist()
