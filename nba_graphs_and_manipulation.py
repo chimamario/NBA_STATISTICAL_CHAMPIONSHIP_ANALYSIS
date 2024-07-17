@@ -7,6 +7,7 @@ df_players_playoff =  pd.read_csv(r"/Users/mariochima/Desktop/my first folder/co
 df_players_regular =  pd.read_csv(r"/Users/mariochima/Desktop/my first folder/coding folder/nba_project_2024/cleaned_up_data and_code/nba_players_regular_season.csv")
 df_regular_teams = pd.read_csv(r"/Users/mariochima/Desktop/my first folder/coding folder/nba_project_2024/cleaned_up_data and_code/regular_season_nba.csv")
 df_playoff_teams = pd.read_csv(r"/Users/mariochima/Desktop/my first folder/coding folder/nba_project_2024/cleaned_up_data and_code/playoff_nba.csv")
+df_players_height = pd.read_csv(r"/Users/mariochima/Desktop/my first folder/coding folder/nba_project_2024/cleaned_up_data and_code/all_seasons.csv")
 
 # print(df_players_regular.head())
 # print(df_players_playoff.head())
@@ -118,6 +119,7 @@ plt.subplots_adjust(bottom=0.3)
 # plt.show()
 plt.clf()
 
+
 #setting up to perform analysis
 # print(regressed_count, progress_count)
 # print(regressed_player_list, progress_player_list)
@@ -142,9 +144,8 @@ regular_playoff_ppg_diff_merged_df = pd.merge(pts_diff_regular_df, pts_diff_play
 regular_playoff_ppg_diff_merged_df['Point Difference'] = regular_playoff_ppg_diff_merged_df['PTS_playoffs'] - regular_playoff_ppg_diff_merged_df['PTS_regular']
 specific_columns = regular_playoff_ppg_diff_merged_df[['Player', 'PTS_regular', 'PTS_playoffs','Point Difference']]
 
-print(specific_columns)
 point_difference_mean = specific_columns['Point Difference'].mean()
-print(point_difference_mean)
+
 
 for player in specific_columns['Player']:
     value = specific_columns.loc[specific_columns['Player'] == player, 'Point Difference']
@@ -156,16 +157,103 @@ for player in specific_columns['Player']:
 
 regressed_avg = regressed_avg_numerator/len(regressed_names)
 progress_avg = progress_avg_numerator/len(progress_names)
-# print(regressed_avg_numerator)
-# print(progress_avg_numerator)
-# print(regressed_avg)
-# print(progress_avg)
+
 
 largest_point_difference = specific_columns.nlargest(5, 'Point Difference')
 smallest_point_difference = specific_columns.nsmallest(5, 'Point Difference')
-print(largest_point_difference)
-print(smallest_point_difference)
 
-specific_columns.to_csv('PPG_differential.csv')
 
-# print(tabulate.tabulate(specific_columns, headers = 'keys', tablefmt = 'psql'))
+# specific_columns.to_csv('PPG_differential.csv')
+
+
+#three-point percentage analysis
+
+regular_players_above_threePA_average = df_players_regular['3PA'].mean()
+playoff_players_above_threePA_average = df_players_playoff['3PA'].mean()
+above_threePA_regular_players = df_players_regular.loc[df_players_regular['3PA'] > regular_players_above_threePA_average]
+above_threePA_playoff_players = df_players_playoff.loc[df_players_playoff['3PA'] > playoff_players_above_threePA_average]
+# print(above_threePA_playoff_players)
+# print(above_threePA_regular_players)
+# print(np.max(above_threePA_regular_players['3P%']))
+# print(np.min(above_threePA_regular_players['3P%']))
+
+above_threePA_regular_players_list = above_threePA_regular_players['Player'].tolist()
+above_threePA_playoff_players_list = above_threePA_playoff_players['Player'].tolist()
+print(above_threePA_regular_players_list)
+
+
+
+df_players_height_no_duplicates = df_players_height.drop_duplicates(subset= ['player_name', 'player_height']) #getting the players height through another dataset. needed to removed the duplicates
+
+
+above_threePA_regular_players['players_height'] = None
+height_list = df_players_height_no_duplicates['player_name'].tolist()
+
+#adding data from height df to above 3P% dataframe
+for player in above_threePA_regular_players_list:
+    if player in height_list:
+        above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, 'players_height']= df_players_height_no_duplicates.loc[df_players_height_no_duplicates['player_name'] == player, 'player_height'].values[0]
+    else:
+        above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, 'players_height']= None
+
+print(above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == 'Paul George', 'players_height'].values[0] )
+
+
+#checking for any players that did not have the same spelling in height df or had not been drafted yet. (Note that the height dataset only goes up to 2022)
+missing_player_height = []
+for player in above_threePA_regular_players_list:
+    if above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, 'players_height'].values[0]== None:
+        missing_player_height.append(player)
+        
+#adding values for missing data
+above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == 'Bojan Bogdanovi?', 'players_height'] = 201
+above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == 'Luka Don?i?', 'players_height'] = 201
+above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == 'Jordan Hawkins', 'players_height'] = 196
+above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == 'Chet Holmgren', 'players_height'] = 216
+above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == 'Nikola Jovi?', 'players_height'] = 208
+above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == 'Kristaps Porzi??is', 'players_height'] = 218
+
+
+
+
+
+
+
+# above_threePA_regular_players['3P_percent for bin'] = None
+
+# for player in above_threePA_regular_players_list:
+#     if above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.25:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] =0.25
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.25 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.27 :
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.27
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.27 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.29 :
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.29
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.29 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.31 :
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.31
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.31 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.33 :
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.33
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.33 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.35:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.35
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.35 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.37:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.37
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.37 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.39:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.39
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.39 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.41:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.41
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.41 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.43:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.43
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.43 and above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] < 0.45:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.45
+#     elif above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P%'].values[0] > 0.45:
+#         above_threePA_regular_players.loc[above_threePA_regular_players['Player'] == player, '3P_percent for bin'] = 0.47
+
+# print(above_threePA_regular_players[['Player', '3P_percent for bin']])
+
+print(np.mean(above_threePA_regular_players['3P%']))
+fig, ax = plt.subplots(figsize = (6,6))
+plt.hist(above_threePA_regular_players['3P%'], bins = 12, alpha = 0.5, density = True)
+plt.hist(above_threePA_playoff_players['3P%'], bins = 12, alpha = 0.5, density = True)
+ax.vlines(x = np.mean(above_threePA_regular_players['3P%']), ymin = 0, ymax = 18, colors = 'r', linestyle = 'dashed')
+ax.vlines(x = np.mean(above_threePA_playoff_players['3P%']), ymin = 0, ymax = 18, colors = 'g', linestyle = 'dashed')
+plt.show()
+
